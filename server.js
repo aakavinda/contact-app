@@ -1,73 +1,77 @@
-// === ✅ server.js ===
+// server.js (MongoDB + Mongoose version)
 const express = require("express");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const path = require("path");
-const mysql = require("mysql2");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "",
-  database: "myapp"
+// ✅ MongoDB Atlas connection string (replace with your own)
+const MONGODB_URI = "mongodb+srv://akavinda:<db_password>@cluster0.0amp58o.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+
+mongoose.connect(MONGODB_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("Connected to MongoDB Atlas"))
+.catch((err) => console.error("MongoDB connection error:", err));
+
+// ✅ Define Mongoose schema and model
+const contactSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true },
+  message: { type: String, required: true },
+  created_at: { type: Date, default: Date.now },
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("MySQL connection failed", err);
-    return;
+const Contact = mongoose.model("Contact", contactSchema);
+
+// ✅ POST: Add new entry
+app.post("/api/contact", async (req, res) => {
+  try {
+    const contact = new Contact(req.body);
+    const saved = await contact.save();
+    res.json({ message: `Hi ${saved.name}, your data was saved!`, id: saved._id });
+  } catch (err) {
+    console.error("Insert error:", err);
+    res.status(500).json({ message: "Database error" });
   }
-  console.log("Connected to MySQL");
 });
 
-app.post("/api/contact", (req, res) => {
-  const { name, email, message } = req.body;
-  const query = "INSERT INTO names (name, email, message) VALUES (?, ?, ?)";
-  db.query(query, [name, email, message], (err, result) => {
-    if (err) {
-      console.error("Insert error:", err);
-      return res.status(500).json({ message: "Database error" });
-    }
-    res.json({ message: `Hi ${name}, your name was saved in MySQL!`, id: result.insertId });
-  });
+// ✅ GET: Fetch all entries
+app.get("/api/names", async (req, res) => {
+  try {
+    const entries = await Contact.find().sort({ created_at: -1 });
+    res.json(entries);
+  } catch (err) {
+    console.error("Fetch error:", err);
+    res.status(500).json({ message: "Database error" });
+  }
 });
 
-app.get("/api/names", (req, res) => {
-  db.query("SELECT * FROM names ORDER BY created_at DESC", (err, results) => {
-    if (err) {
-      console.error("Fetch error:", err);
-      return res.status(500).json({ message: "Database error" });
-    }
-    res.json(results);
-  });
-});
-
-app.delete("/api/names/:id", (req, res) => {
-  const id = req.params.id;
-  db.query("DELETE FROM names WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error("Delete error:", err);
-      return res.status(500).json({ message: "Database delete error" });
-    }
+// ✅ DELETE: Remove an entry by ID
+app.delete("/api/names/:id", async (req, res) => {
+  try {
+    await Contact.findByIdAndDelete(req.params.id);
     res.json({ message: "Entry deleted successfully" });
-  });
+  } catch (err) {
+    console.error("Delete error:", err);
+    res.status(500).json({ message: "Database delete error" });
+  }
 });
 
-app.put("/api/names/:id", (req, res) => {
-  const id = req.params.id;
-  const { name, email, message } = req.body;
-  const query = "UPDATE names SET name = ?, email = ?, message = ? WHERE id = ?";
-  db.query(query, [name, email, message, id], (err) => {
-    if (err) {
-      console.error("Update error:", err);
-      return res.status(500).json({ message: "Database update error" });
-    }
+// ✅ PUT: Update an entry by ID
+app.put("/api/names/:id", async (req, res) => {
+  try {
+    await Contact.findByIdAndUpdate(req.params.id, req.body);
     res.json({ message: "Entry updated successfully" });
-  });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: "Database update error" });
+  }
 });
 
 const PORT = 3000;

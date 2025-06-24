@@ -64,7 +64,7 @@
           const item = document.createElement("li");
           item.className = "bg-white shadow rounded p-4 flex justify-between items-start";
 
-          const highlightBadge = (entry.id === highlightId)
+          const highlightBadge = (entry._id === highlightId)
             ? `<span class="ml-2 text-sm text-green-600 font-semibold">✔ Saved!</span>`
             : "";
 
@@ -78,8 +78,8 @@
               </p>
             </div>
             <div class="flex flex-col gap-2 ml-4">
-              <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm" onclick="editName(${entry.id}, '${entry.name}', '${entry.email}', \`${entry.message.replace(/`/g, "\\`")}\`)">Edit</button>
-              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="deleteName(${entry.id})">Delete</button>
+              <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm" onclick="editName(${entry._id}, '${entry.name}', '${entry.email}', \`${entry.message.replace(/`/g, "\\`")}\`)">Edit</button>
+              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="deleteName(${entry._id})">Delete</button>
             </div>
           `;
 

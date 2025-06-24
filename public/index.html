@@ -52,53 +52,77 @@
     }
 
     async function loadNames(highlightId = null) {
-      try {
-        const res = await fetch("/api/names");
-        if (!res.ok) throw new Error(`Server returned ${res.status}`);
+  try {
+    const res = await fetch("/api/names");
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
 
-        const names = await res.json();
-        const nameList = document.getElementById("nameList");
-        nameList.innerHTML = "";
+    const names = await res.json();
+    const nameList = document.getElementById("nameList");
+    nameList.innerHTML = "";
 
-        names.forEach(entry => {
-          const item = document.createElement("li");
-          item.className = "bg-white shadow rounded p-4 flex justify-between items-start";
+    names.forEach(entry => {
+      const item = document.createElement("li");
+      item.className = "bg-white shadow rounded p-4 flex justify-between items-start";
 
-          const highlightBadge = (entry._id === highlightId)
-            ? `<span class="ml-2 text-sm text-green-600 font-semibold">✔ Saved!</span>`
-            : "";
+      const highlightBadge = (entry._id === highlightId)
+        ? `<span class="ml-2 text-sm text-green-600 font-semibold">✔ Saved!</span>`
+        : "";
 
-          item.innerHTML = `
-            <div class="max-w-[70%]">
-              <p class="font-semibold text-blue-700">${entry.name}${highlightBadge}</p>
-              <p class="text-sm text-gray-700">${entry.email}</p>
-              <p class="text-gray-600 mt-1">${entry.message}</p>
-              <p class="text-xs text-gray-400 mt-1">
-                ${entry.created_at ? `Added on ${new Date(entry.created_at).toLocaleString()}` : ""}
-              </p>
-            </div>
-            <div class="flex flex-col gap-2 ml-4">
-              <button class="bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm" onclick="editName(${entry._id}, '${entry.name}', '${entry.email}', \`${entry.message.replace(/`/g, "\\`")}\`)">Edit</button>
-              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm" onclick="deleteName(${entry._id})">Delete</button>
-            </div>
-          `;
+      item.innerHTML = `
+        <div class="max-w-[70%]">
+          <p class="font-semibold text-blue-700">${entry.name}${highlightBadge}</p>
+          <p class="text-sm text-gray-700">${entry.email}</p>
+          <p class="text-gray-600 mt-1">${entry.message}</p>
+          <p class="text-xs text-gray-400 mt-1">
+            ${entry.created_at ? `Added on ${new Date(entry.created_at).toLocaleString()}` : ""}
+          </p>
+        </div>
+        <div class="flex flex-col gap-2 ml-4">
+          <button class="edit-btn bg-yellow-400 hover:bg-yellow-500 text-white px-3 py-1 rounded text-sm">Edit</button>
+          <button class="delete-btn bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Delete</button>
+        </div>
+      `;
 
-          nameList.appendChild(item);
-        });
-      } catch (err) {
-        console.error("loadNames failed:", err.message);
-        throw err;
-      }
-    }
+      // Bind event listeners safely
+      const editBtn = item.querySelector(".edit-btn");
+      const deleteBtn = item.querySelector(".delete-btn");
+
+      editBtn.addEventListener("click", () => {
+        editName(entry._id, entry.name, entry.email, entry.message);
+      });
+
+      deleteBtn.addEventListener("click", () => {
+        deleteName(entry._id);
+      });
+
+      nameList.appendChild(item);
+    });
+  } catch (err) {
+    console.error("loadNames failed:", err.message);
+    throw err;
+  }
+}
+
 
     async function deleteName(id) {
-      if (confirm("Are you sure you want to delete this entry?")) {
-        const res = await fetch(`/api/names/${id}`, { method: "DELETE" });
-        const data = await res.json();
+  if (confirm("Are you sure you want to delete this entry?")) {
+    try {
+      const res = await fetch(`/api/names/${id}`, { method: "DELETE" });
+      const data = await res.json();
+
+      if (res.ok) {
         showToast("Entry deleted successfully", "red");
-        await loadNames();
+        await loadNames();  // 👈 refresh the list after successful delete
+      } else {
+        showToast(data.message || "Delete failed", "red");
       }
+    } catch (err) {
+      console.error("Delete error:", err);
+      showToast("Something went wrong!", "red");
     }
+  }
+}
+
 
     function editName(id, name, email, message) {
       document.getElementById("name").value = name;
